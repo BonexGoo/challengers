@@ -299,6 +299,17 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
             m->SetCursor(Cursor);
         }
     }
+    else if(type == NT_ZayAtlas)
+    {
+        if(!String::Compare(topic, "AtlasUpdated"))
+        {
+            const String AtlasJson = R::PrintUpdatedAtlas();
+            if(m->mWidgetMain)
+                m->mWidgetMain->UpdateAtlas(AtlasJson);
+            if(m->mWidgetSub)
+                m->mWidgetSub->UpdateAtlas(AtlasJson);
+        }
+    }
 }
 
 ZAY_VIEW_API OnGesture(GestureType type, sint32 x, sint32 y)
@@ -1199,6 +1210,7 @@ void challengersData::EnterWidget(sint32 index)
     mWidgetMain = new ZayWidget();
     InitWidget(*mWidgetMain, CurName);
     mWidgetMain->Reload(CurPath);
+    mWidgetMain->UpdateAtlas(R::PrintUpdatedAtlas(true));
     SetTitle(CurName);
     ZayWidgetDOM::SetValue("program.scale", String::FromInteger(CurScale));
     ZayWidgetDOM::SetValue("program.flexible", (CurFlexible)? "1" : "0");
@@ -1222,6 +1234,7 @@ void challengersData::EnterWidget(sint32 index)
         mWidgetSub = new ZayWidget();
         InitWidget(*mWidgetSub, SubName);
         mWidgetSub->Reload(SubPath);
+        mWidgetSub->UpdateAtlas(R::PrintUpdatedAtlas(true));
         // 영역수집
         const sint32 SubX = ZayWidgetDOM::GetValue(CurHeader + "sub.x").ToInteger();
         const sint32 SubY = ZayWidgetDOM::GetValue(CurHeader + "sub.y").ToInteger();
@@ -1524,6 +1537,7 @@ void challengersData::ChangeWidget(sint32 index)
     mWidgetMain = new ZayWidget();
     InitWidget(*mWidgetMain, CurName);
     mWidgetMain->Reload(CurPath);
+    mWidgetMain->UpdateAtlas(R::PrintUpdatedAtlas(true));
     SetTitle(CurName);
 }
 

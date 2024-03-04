@@ -19,8 +19,6 @@ namespace BOSS
     class AtlasSet
     {
     public:
-        AtlasSet() {FileSize = 0; ModifyTime = 0;}
-        ~AtlasSet() {}
         AtlasSet& operator=(const AtlasSet& rhs)
         {
             KeyVerCode = rhs.KeyVerCode;
@@ -32,12 +30,13 @@ namespace BOSS
             return *this;
         }
     public:
-        sint32 KeyVerCode;
+        sint32 KeyVerCode {0}; // 1 또는 2
         String KeyFileName;
         String AtlasFileName;
         String AtlasFolderName;
-        sint32 FileSize;
-        sint32 ModifyTime;
+        sint32 FileSize {0};
+        sint32 ModifyTime {0};
+        bool Updated {false};
     };
     static Map<Image> gImageMap;
     static Map<BoolClass> gExistMap;
@@ -141,16 +140,43 @@ namespace BOSS
 
     bool R::IsAtlasUpdated()
     {
+        bool AnyUpdated = false;
         for(sint32 i = 0, iend = gAtlasSets.Count(); i < iend; ++i)
         {
-            const auto& CurAtlasSet = gAtlasSets[i];
+            auto& CurAtlasSet = gAtlasSets.At(i);
             String FullPath = gAtlasDir + CurAtlasSet.AtlasFileName;
             uint64 FileSize = 0, ModifyTime = 0;
             if(Asset::Exist(FullPath, nullptr, &FileSize, nullptr, nullptr, &ModifyTime))
             if(CurAtlasSet.FileSize != (FileSize & 0x7FFFFFFF) || CurAtlasSet.ModifyTime != (ModifyTime & 0x7FFFFFFF))
-                return true;
+            {
+                CurAtlasSet.FileSize = (sint32) (FileSize & 0x7FFFFFFF);
+                CurAtlasSet.ModifyTime = (sint32) (ModifyTime & 0x7FFFFFFF);
+                CurAtlasSet.Updated = true;
+                AnyUpdated = true;
+            }
+        }
+
+        if(AnyUpdated)
+        {
+            Platform::BroadcastNotify("AtlasUpdated", nullptr, NT_ZayAtlas, nullptr, true);
+            return true;
         }
         return false;
+    }
+
+    String R::PrintUpdatedAtlas(bool everything)
+    {
+        Context UpdatedAtlas;
+        for(sint32 i = 0, iend = gAtlasSets.Count(); i < iend; ++i)
+        {
+            if(gAtlasSets[i].Updated || everything)
+            {
+                UpdatedAtlas.At(i).At("folder").Set(Platform::File::RootForAssetsRem() + gAtlasDir + gAtlasSets[i].AtlasFolderName);
+                UpdatedAtlas.At(i).At("filesize").Set(String::FromInteger(gAtlasSets[i].FileSize));
+                UpdatedAtlas.At(i).At("modifytime").Set(String::FromInteger(gAtlasSets[i].ModifyTime));
+            }
+        }
+        return UpdatedAtlas.SaveJson();
     }
 
     void R::RebuildAll()
@@ -159,12 +185,11 @@ namespace BOSS
         for(sint32 i = 0, iend = gAtlasSets.Count(); i < iend; ++i)
         {
             BoxrBuilder Builder;
-            uint64 FileSize = 0, ModifyTime = 0;
-            if(Asset::Exist(gAtlasDir + gAtlasSets[i].AtlasFileName, nullptr, &FileSize, nullptr, nullptr, &ModifyTime))
-            if(Builder.LoadAtlas(gAtlasDir + gAtlasSets[i].KeyFileName, gAtlasDir + gAtlasSets[i].AtlasFileName, 0 < i, gAtlasSets[i].KeyVerCode))
+            if(gAtlasSets[i].Updated)
             {
-                gAtlasSets.At(i).FileSize = (sint32) (FileSize & 0x7FFFFFFF);
-                gAtlasSets.At(i).ModifyTime = (sint32) (ModifyTime & 0x7FFFFFFF);
+                gAtlasSets.At(i).Updated = false;
+                Builder.LoadAtlas(gAtlasDir + gAtlasSets[i].KeyFileName,
+                    gAtlasDir + gAtlasSets[i].AtlasFileName, 0 < i, gAtlasSets[i].KeyVerCode);
             }
             Builder.SaveSubImages(gAtlasDir + gAtlasSets[i].AtlasFolderName);
         }
