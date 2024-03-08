@@ -79,17 +79,17 @@
 					[
 						"ifpressed(ui_exit)",
 						[
-							"r.btn_cut_a_p",
+							"r.btn_close_h_p",
 							"centermiddle"
 						],
 						"eliffocused(ui_exit)",
 						[
-							"r.btn_cut_a_h",
+							"r.btn_close_h_p",
 							"centermiddle"
 						],
 						"else",
 						[
-							"r.btn_cut_a_n",
+							"r.btn_close_n",
 							"centermiddle"
 						]
 					],

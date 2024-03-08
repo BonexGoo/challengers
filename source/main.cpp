@@ -39,7 +39,6 @@ bool PlatformInit()
 
     Platform::SetViewCreator(ZayView::Creator);
     Platform::SetWindowName("Challengers");
-    gWindowView = Platform::SetWindowView("challengersView");
 
     // 윈도우 위치설정
     String WindowInfoString = String::FromAsset("windowinfo.json");
@@ -74,6 +73,8 @@ bool PlatformInit()
                 Platform::UpdateAllViews();
             }
         });
+
+    gWindowView = Platform::SetWindowView("challengersView");
     return true;
 }
 

@@ -34,7 +34,6 @@ public:
     sint32 MoveNcTop(const rect128& rect, sint32 addy);
     sint32 MoveNcRight(const rect128& rect, sint32 addx);
     sint32 MoveNcBottom(const rect128& rect, sint32 addy);
-    void RenderWindowSystem(ZayPanel& panel);
     void RenderWindowOutline(ZayPanel& panel);
     bool RenderHtmlView(ZayPanel& panel, chars viewid, chars htmlname);
     bool RenderLogView(ZayPanel& panel, sint32 maxcount);
@@ -125,6 +124,7 @@ public: // 윈도우
 public: // 위젯
     uint64 mUpdateMsec {0};
     uint64 mLastModifyTime {0};
+    ZayWidget mWidgetIntro;
     ZayWidget* mWidgetMain {nullptr};
     ZayWidget* mWidgetSub {nullptr};
     rect128 mWidgetSubRect {0, 0, 0, 0};
