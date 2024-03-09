@@ -50,9 +50,6 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
         {
             m->EnterWidget(m->mReservedEnterWidget);
             m->mReservedEnterWidget = -1;
-            gFirstPosX = 0;
-            gFirstPosY = 0;
-            gFirstScale = 0;
         }
         else if(m->mReservedChangeWidget != -1)
         {
@@ -246,9 +243,14 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
         }
 
         // 위젯 틱실행
-        if(m->mWidgetMain && m->mWidgetMain->TickOnce())
-            m->invalidate();
-        if(m->mWidgetSub && m->mWidgetSub->TickOnce())
+        if(m->mWidgetMain)
+        {
+            if(m->mWidgetMain->TickOnce())
+                m->invalidate();
+            if(m->mWidgetSub && m->mWidgetSub->TickOnce())
+                m->invalidate();
+        }
+        else if(m->mWidgetIntro.TickOnce())
             m->invalidate();
     }
 }
@@ -262,6 +264,12 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
             const uint64 Msec = (in)? Platform::Utility::CurrentTimeMsec() + sint32o(in).ConstValue() : 1;
             if(m->mUpdateMsec < Msec)
                 m->mUpdateMsec = Msec;
+        }
+        else if(!String::Compare(topic, "Maximize"))
+        {
+            if(m->IsFullScreen())
+                m->SetNormalWindow();
+            else m->SetFullScreen();
         }
     }
     else if(type == NT_KeyPress)
@@ -304,6 +312,7 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
         if(!String::Compare(topic, "AtlasUpdated"))
         {
             const String AtlasJson = R::PrintUpdatedAtlas();
+            m->mWidgetIntro.UpdateAtlas(AtlasJson);
             if(m->mWidgetMain)
                 m->mWidgetMain->UpdateAtlas(AtlasJson);
             if(m->mWidgetSub)
@@ -381,12 +390,11 @@ ZAY_VIEW_API OnRender(ZayPanel& panel)
                 ZAY_ZOOM_CLEAR(panel)
                     panel.text(10, 10, String::Format("(%dx%d)", WindowRect.l, WindowRect.t), UIFA_LeftTop);
             }
-
-            // 아웃라인
-            if(!m->IsFullScreen())
-                m->RenderWindowOutline(panel);
         }
         // 위젯포커스가 없을 때
+        else m->mWidgetIntro.Render(panel);
+
+        /*// 위젯포커스가 없을 때
         else
         {
             ZAY_RGB(panel, 255, 255, 255)
@@ -534,7 +542,11 @@ ZAY_VIEW_API OnRender(ZayPanel& panel)
             #if !BOSS_ANDROID
                 m->RenderWindowSystem(panel);
             #endif
-        }
+        }*/
+
+        // 아웃라인
+        if(!m->IsFullScreen())
+            m->RenderWindowOutline(panel);
     }
 }
 
@@ -563,6 +575,11 @@ challengersData::challengersData()
     ZayWidgetDOM::SetValue("program.recstep", "'x'"); // x, saving, savecheck, encoding
     ZayWidgetDOM::SetValue("program.recpercent", "0");
     mDirectlyWidget = String::FromAsset("directinfo.txt");
+
+    // 인트로위젯
+    InitWidget(mWidgetIntro, "intro");
+    mWidgetIntro.Reload("widget/intro.json");
+    mWidgetIntro.UpdateAtlas(R::PrintUpdatedAtlas(true));
 
     // 저장된 서버IP
     auto LastServerIP = String::FromAsset("serverip.txt");
@@ -623,58 +640,6 @@ sint32 challengersData::MoveNcBottom(const rect128& rect, sint32 addy)
 {
     const sint32 NewBottom = rect.b + addy;
     return rect.t + Math::Max(mMinWindowHeight, NewBottom - rect.t);
-}
-
-void challengersData::RenderWindowSystem(ZayPanel& panel)
-{
-    // 최소화버튼
-    ZAY_XYWH_UI(panel, panel.w() - 8 - (24 + 18) * 3, 26, 24, 24, "ui_win_min",
-        ZAY_GESTURE_T(t)
-        {
-            if(t == GT_InReleased)
-                Platform::Utility::SetMinimize();
-        })
-    ZAY_ZOOM(panel, 0.8)
-    {
-        const bool Hovered = ((panel.state("ui_win_min") & (PS_Focused | PS_Dropping)) == PS_Focused);
-        panel.icon(R((Hovered)? "btn_minimize_h" : "btn_minimize_n"), UIA_CenterMiddle);
-    }
-
-    // 최대화버튼
-    ZAY_XYWH_UI(panel, panel.w() - 8 - (24 + 18) * 2, 26, 24, 24, "ui_win_max",
-        ZAY_GESTURE_T(t)
-        {
-            if(t == GT_InReleased)
-            {
-                if(m->IsFullScreen())
-                    m->SetNormalWindow();
-                else m->SetFullScreen();
-            }
-        })
-    ZAY_ZOOM(panel, 0.8)
-    {
-        const bool Hovered = ((panel.state("ui_win_max") & (PS_Focused | PS_Dropping)) == PS_Focused);
-        if(m->IsFullScreen())
-            panel.icon(R((Hovered)? "btn_upsizing_h" : "btn_upsizing_n"), UIA_CenterMiddle);
-        else panel.icon(R((Hovered)? "btn_downsizing_h" : "btn_downsizing_n"), UIA_CenterMiddle);
-    }
-
-    // 종료버튼
-    ZAY_XYWH_UI(panel, panel.w() - 8 - (24 + 18) * 1, 26, 24, 24, "ui_win_close",
-        ZAY_GESTURE_T(t)
-        {
-            if(t == GT_InReleased)
-                Platform::Utility::ExitProgram();
-        })
-    ZAY_ZOOM(panel, 0.8)
-    {
-        const bool Hovered = ((panel.state("ui_win_close") & (PS_Focused | PS_Dropping)) == PS_Focused);
-        panel.icon(R((Hovered)? "btn_close_h" : "btn_close_n"), UIA_CenterMiddle);
-    }
-
-    // 아웃라인
-    if(!IsFullScreen())
-        RenderWindowOutline(panel);
 }
 
 void challengersData::RenderWindowOutline(ZayPanel& panel)
@@ -1278,6 +1243,16 @@ void challengersData::InitWidget(ZayWidget& widget, chars name)
             {
                 const String Topic = params.Param(0).ToText();
                 Platform::BroadcastNotify(Topic, nullptr);
+            }
+        })
+        // 위젯선택
+        .AddGlue("enter", ZAY_DECLARE_GLUE(params, this)
+        {
+            if(params.ParamCount() == 1)
+            {
+                const sint32 Index = params.Param(0).ToInteger();
+                mReservedEnterWidget = Index;
+                invalidate();
             }
         })
         // 위젯변경

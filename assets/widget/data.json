@@ -78,6 +78,10 @@
 	},
 	"fonts":
 	[
-		{"path" : "font/SKYBORI.ttf"}
+		{"path" : "font/NotoSansKR-Bold.ttf"},
+		{"path" : "font/NotoSansKR-Medium.ttf"},
+		{"path" : "font/NotoSansKR-Regular.ttf"},
+		{"path" : "font/Roboto-Bold.ttf"},
+		{"path" : "font/Roboto-Medium.ttf"}
 	]
 }
