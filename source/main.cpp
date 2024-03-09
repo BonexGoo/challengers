@@ -6,9 +6,9 @@
 
 sint32 gProgramWidth = 900;
 #if BOSS_WINDOWS
-    sint32 gProgramHeight = 600 + 1;
+    sint32 gProgramHeight = 800 + 1;
 #else
-    sint32 gProgramHeight = 600;
+    sint32 gProgramHeight = 800;
 #endif
 String gFirstWidget;
 sint32 gFirstPosX = 0;
@@ -61,6 +61,8 @@ bool PlatformInit()
     Context AtlasInfo(ST_Json, SO_OnlyReference, AtlasInfoString, AtlasInfoString.Length());
     R::SetAtlasDir("image");
     R::AddAtlas("ui_atlaskey2.png", "main.png", AtlasInfo, 2);
+    R::AddAtlas("ui_atlaskey2.png", "icons/icon_ui_action_atlas.png", AtlasInfo, 2);
+    R::AddAtlas("ui_atlaskey2.png", "ui_component/btn_atlas.png", AtlasInfo, 2);
     if(R::IsAtlasUpdated())
         R::RebuildAll();
 

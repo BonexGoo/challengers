@@ -42,6 +42,8 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
         ZayWidgetDOM::SetValue("program.width", String::FromInteger(gProgramWidth));
         ZayWidgetDOM::SetValue("program.height", String::FromInteger(gProgramHeight));
     }
+    else if(type == CT_Activate && !boolo(in).ConstValue())
+        m->clearCapture();
     else if(type == CT_Tick)
     {
         // 예약된 위젯호출 또는 DOM확인
@@ -271,6 +273,10 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
                 m->SetNormalWindow();
             else m->SetFullScreen();
         }
+        else if(!String::Compare(topic, "ClearCapture"))
+        {
+            m->clearCapture();
+        }
     }
     else if(type == NT_KeyPress)
     {
@@ -394,154 +400,26 @@ ZAY_VIEW_API OnRender(ZayPanel& panel)
         // 위젯포커스가 없을 때
         else m->mWidgetIntro.Render(panel);
 
-        /*// 위젯포커스가 없을 때
-        else
+        /*// 다이렉트핀 버튼
+        if(gFirstWidget.Length() == 0)
+        ZAY_XYWH_UI(panel, 70, 10, 60, 60, "ui_intro_skip",
+            ZAY_GESTURE_T(t)
+            {
+                if(t == GT_InReleased)
+                {
+                    if(0 < m->mDirectlyWidget.Length())
+                        m->mDirectlyWidget.Empty();
+                    else m->mDirectlyWidget = "x";
+                    m->invalidate();
+                }
+            })
         {
-            ZAY_RGB(panel, 255, 255, 255)
-                panel.fill();
-
-            // DOM초기화 버튼
-            ZAY_XYWH_UI(panel, 10, 10, 60, 60, "ui_dom_reset",
-                ZAY_GESTURE_T(t)
-                {
-                    if(t == GT_InReleased)
-                        m->ResetDom(-1);
-                })
-            {
-                const bool Hovered = ((panel.state("ui_dom_reset") & (PS_Focused | PS_Dropping)) == PS_Focused);
-                const bool Grabbed = ((panel.state("ui_dom_reset") & (PS_Pressed | PS_Dragging)) != 0);
-                if(Grabbed) panel.icon(R("btn_reset_a_p"), UIA_CenterMiddle);
-                else if(Hovered) panel.icon(R("btn_reset_a_h"), UIA_CenterMiddle);
-                else panel.icon(R("btn_reset_a_n"), UIA_CenterMiddle);
-            }
-
-            // 다이렉트핀 버튼
-            if(gFirstWidget.Length() == 0)
-            ZAY_XYWH_UI(panel, 70, 10, 60, 60, "ui_intro_skip",
-                ZAY_GESTURE_T(t)
-                {
-                    if(t == GT_InReleased)
-                    {
-                        if(0 < m->mDirectlyWidget.Length())
-                            m->mDirectlyWidget.Empty();
-                        else m->mDirectlyWidget = "x";
-                        m->invalidate();
-                    }
-                })
-            {
-                const bool Hovered = ((panel.state("ui_intro_skip") & (PS_Focused | PS_Dropping)) == PS_Focused);
-                const bool Grabbed = ((panel.state("ui_intro_skip") & (PS_Pressed | PS_Dragging)) != 0);
-                if(Grabbed) panel.icon(R("btn_pin_a_p"), UIA_CenterMiddle);
-                else if(0 < m->mDirectlyWidget.Length()) panel.icon(R("btn_pin_a_s"), UIA_CenterMiddle);
-                else if(Hovered) panel.icon(R("btn_pin_a_h"), UIA_CenterMiddle);
-                else panel.icon(R("btn_pin_a_n"), UIA_CenterMiddle);
-            }
-
-            // IP정보변경 에디터
-            ZAY_XYWH(panel, 20, panel.h() - 20 - 40, 240, 40)
-            ZAY_INNER(panel, 2)
-            {
-                ZAY_RGB(panel, 0, 0, 0)
-                    panel.rect(2);
-                // 에디트박스
-                class DefaultEditBox : public ZayExtend::Renderer
-                {
-                public:
-                    bool HasInsider(chars uiname, chars rendername) const override {return false;}
-                    bool RenderInsider(chars uiname, chars rendername, ZayPanel& panel, sint32 pv) const
-                    {
-                        if(!String::Compare(rendername, "default"))
-                        {
-                            const String ServerHost = ZayWidgetDOM::GetValue("data.server.host").ToText();
-                            ZAY_RGB(panel, 0, 0, 0)
-                                panel.text(ServerHost);
-                            return true;
-                        }
-                        return false;
-                    }
-                };
-                static DefaultEditBox DefaultRenderer;
-                ZAY_INNER_SCISSOR(panel, 0)
-                ZAY_FONT(panel, 2.0)
-                ZAY_RGB(panel, 64, 128, 255)
-                    if(ZayControl::RenderEditBox(panel, "ui_serverip", "serverip", 3, true, false, &DefaultRenderer))
-                        m->invalidate(2);
-            }
-
-            // IP정보변경 키보드
-            static chars KeyNames[12] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "≪"};
-            for(sint32 i = 0; i < 12; ++i)
-            {
-                const String UIName = String::Format("ui_key%d", i);
-                ZAY_XYWH_UI(panel, 280 + 50 * i, panel.h() - 20 - 40, 40, 40, UIName,
-                    ZAY_GESTURE_T(t, i)
-                    {
-                        const sint32 KeyCodes[12] = {49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 190, 8};
-                        const chars KeyTexts[12] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "\x08"};
-                        if(t == GT_Pressed || t == GT_InReleased || t == GT_OutReleased || t == GT_CancelReleased)
-                            Platform::SendKeyEvent(gWindowView, KeyCodes[i], KeyTexts[i], (t == GT_Pressed)? true : false);
-                    })
-                {
-                    const bool Grabbed = ((panel.state(UIName) & (PS_Pressed | PS_Dragging)) != 0);
-                    ZAY_RGBA(panel, 64, 64, 64, 128)
-                        panel.fill();
-                    ZAY_FONT(panel, 2.0)
-                    ZAY_RGB_IF(panel, 255, 255, 255, !Grabbed)
-                    ZAY_RGB_IF(panel, 64, 128, 255, Grabbed)
-                        panel.text(KeyNames[i]);
-                }
-            }
-
-            // 위젯버튼들
-            ZAY_LTRB_SCISSOR(panel, 20, 80, panel.w() - 20, panel.h() - 80)
-            {
-                ZAY_RGB(panel, 240, 240, 240)
-                    panel.fill();
-
-                Point Pos = {20, 20};
-                const sint32 ServerIdx = ZayWidgetDOM::GetValue("data.server.idx").ToInteger();
-                const sint32 WidgetCount = ZayWidgetDOM::GetValue("data.widgets.count").ToInteger();
-                for(sint32 i = 0; i < WidgetCount; ++i)
-                {
-                    const String UIName = String::Format("ui_widget_%d", i);
-                    ZAY_XYWH_UI(panel, Pos.x, Pos.y, 200, 120, UIName,
-                        ZAY_GESTURE_T(t, i)
-                        {
-                            if(t == GT_InReleased)
-                                m->EnterWidget(i);
-                        })
-                    {
-                        const bool Hovered = ((panel.state(UIName) & (PS_Focused | PS_Dropping)) == PS_Focused);
-                        const bool Grabbed = ((panel.state(UIName) & (PS_Pressed | PS_Dragging)) != 0);
-                        ZAY_RGBA_IF(panel, 240, 128, 128, 128, i == ServerIdx)
-                        {
-                            if(Grabbed) panel.ninepatch(R("btn_a_p"));
-                            else if(Hovered) panel.ninepatch(R("btn_a_h"));
-                            else panel.ninepatch(R("btn_a_n"));
-                        }
-
-                        // 타이틀
-                        const String CurHeader = String::Format("data.widgets.%d.", i);
-                        const String CurName = ZayWidgetDOM::GetValue(CurHeader + "name").ToText();
-                        ZAY_RGB(panel, 0, 0, 0)
-                        ZAY_RGB_IF(panel, 0, 0, 255, !CurName.Compare(m->mDirectlyWidget))
-                        ZAY_FONT(panel, 2.0, "KIA Bold")
-                            panel.text(CurName + ((i == ServerIdx)? "(s)" : ""), UIFA_CenterMiddle, UIFE_Right);
-                    }
-                    // 다음위치
-                    Pos.x += 200 + 20;
-                    if(panel.w() < Pos.x + 200 + 10)
-                    {
-                        Pos.x = 20;
-                        Pos.y += 120 + 20;
-                    }
-                }
-            }
-
-            // 윈도우시스템
-            #if !BOSS_ANDROID
-                m->RenderWindowSystem(panel);
-            #endif
+            const bool Hovered = ((panel.state("ui_intro_skip") & (PS_Focused | PS_Dropping)) == PS_Focused);
+            const bool Grabbed = ((panel.state("ui_intro_skip") & (PS_Pressed | PS_Dragging)) != 0);
+            if(Grabbed) panel.icon(R("btn_pin_a_p"), UIA_CenterMiddle);
+            else if(0 < m->mDirectlyWidget.Length()) panel.icon(R("btn_pin_a_s"), UIA_CenterMiddle);
+            else if(Hovered) panel.icon(R("btn_pin_a_h"), UIA_CenterMiddle);
+            else panel.icon(R("btn_pin_a_n"), UIA_CenterMiddle);
         }*/
 
         // 아웃라인
@@ -1025,6 +903,7 @@ void challengersData::ReloadDOMCore(const Context& data)
     mStackedValues.Reset();
     ZayWidgetDOM::RemoveVariables("data.");
     ZayWidgetDOM::SetJson(data, "data.");
+    ZayWidgetDOM::RemoveVariables("option.");
 
     // 폰트확보
     const sint32 FontCount = ZayWidgetDOM::GetValue("data.fonts.count").ToInteger();
@@ -1244,6 +1123,94 @@ void challengersData::InitWidget(ZayWidget& widget, chars name)
                 const String Topic = params.Param(0).ToText();
                 Platform::BroadcastNotify(Topic, nullptr);
             }
+        })
+        // 옵션준비
+        .AddGlue("option_ready", ZAY_DECLARE_GLUE(params, this)
+        {
+            if(params.ParamCount() == 1)
+            {
+                const sint32 Index = params.Param(0).ToInteger();
+                if(Index < ZayWidgetDOM::GetValue("data.widgets.count").ToInteger())
+                {
+                    const String Header = String::Format("data.widgets.%d", Index);
+                    ZayWidgetDOM::SetComment("option.edit0", ZayWidgetDOM::GetValue(Header + ".name").ToText());
+                    ZayWidgetDOM::SetComment("option.edit1", ZayWidgetDOM::GetValue(Header + ".width").ToText());
+                    ZayWidgetDOM::SetComment("option.edit2", ZayWidgetDOM::GetValue(Header + ".height").ToText());
+                    ZayWidgetDOM::SetValue("option.flexible", ZayWidgetDOM::GetValue(Header + ".flexible").ToText());
+                    ZayWidgetDOM::SetValue("option.scale", ZayWidgetDOM::GetValue(Header + ".scale").ToText());
+                }
+                else
+                {
+                    ZayWidgetDOM::SetComment("option.edit0", "나의 앱");
+                    ZayWidgetDOM::SetComment("option.edit1", "800");
+                    ZayWidgetDOM::SetComment("option.edit2", "600");
+                    ZayWidgetDOM::SetValue("option.flexible", "0");
+                    ZayWidgetDOM::SetValue("option.scale", "100");
+                }
+            }
+        })
+        // 옵션승인
+        .AddGlue("option_confirm", ZAY_DECLARE_GLUE(params, this)
+        {
+            if(params.ParamCount() == 1)
+            {
+                const sint32 Index = params.Param(0).ToInteger();
+                const String DataString = String::FromAsset("widget/data.json");
+                Context DataJson(ST_Json, SO_OnlyReference, DataString, DataString.Length());
+
+                const String Name = ZayWidgetDOM::GetComment("option.edit0");
+                const sint32 Width = Math::Clamp(Parser::GetInt(ZayWidgetDOM::GetComment("option.edit1")), 100, 3840);
+                const sint32 Height = Math::Clamp(Parser::GetInt(ZayWidgetDOM::GetComment("option.edit2")), 100, 2160);
+                const String Path = String::Format("widget/%s.json", (chars) Name);
+                // Name과 동일한 위젯이 없을 경우 sample을 복사
+                if(!Asset::Exist(Path))
+                {
+                    const String Sample = String::FromAsset("widget/sample.json");
+                    Sample.ToAsset(Path, true);
+                }
+
+                hook(DataJson.At("widgets").At(Index))
+                {
+                    fish.At("name").Set(Name);
+                    fish.At("width").Set(String::FromInteger(Width));
+                    fish.At("height").Set(String::FromInteger(Height));
+                    fish.At("flexible").Set(ZayWidgetDOM::GetValue("option.flexible").ToText());
+                    fish.At("scale").Set(ZayWidgetDOM::GetValue("option.scale").ToText());
+                    fish.At("path").Set(Path);
+                }
+                DataJson.SaveJson().ToAsset("widget/data.json", true);
+            }
+        })
+        // 옵션삭제
+        .AddGlue("option_remove", ZAY_DECLARE_GLUE(params, this)
+        {
+            if(params.ParamCount() == 1)
+            {
+                const sint32 Index = params.Param(0).ToInteger();
+                const String DataString = String::FromAsset("widget/data.json");
+                Context DataJson(ST_Json, SO_OnlyReference, DataString, DataString.Length());
+
+                DataJson.At("widgets").Remove(Index);
+                DataJson.SaveJson().ToAsset("widget/data.json", true);
+            }
+        })
+        // 옵션-플렉시블토글
+        .AddGlue("option_flexible_turn", ZAY_DECLARE_GLUE(params, this)
+        {
+            const sint32 NextTrun = 1 - ZayWidgetDOM::GetValue("option.flexible").ToInteger();
+            ZayWidgetDOM::SetValue("option.flexible", String::FromInteger(NextTrun));
+        })
+        // 옵션-스케일업
+        .AddGlue("option_scale_up", ZAY_DECLARE_GLUE(params, this)
+        {
+            const sint32 NextScale = Math::Min(ZayWidgetDOM::GetValue("option.scale").ToInteger() + 10, 500);
+            ZayWidgetDOM::SetValue("option.scale", String::FromInteger(NextScale));
+        })
+        // 옵션-스케일다운
+        .AddGlue("option_scale_down", ZAY_DECLARE_GLUE(params, this)
+        {
+            const sint32 NextScale = Math::Max(10, ZayWidgetDOM::GetValue("option.scale").ToInteger() - 10);
+            ZayWidgetDOM::SetValue("option.scale", String::FromInteger(NextScale));
         })
         // 위젯선택
         .AddGlue("enter", ZAY_DECLARE_GLUE(params, this)

@@ -1,9 +1,4 @@
 {
-	"kiosk":
-	{
-		"name":"중국집",
-		"menu":["짜장면", "짬뽕", "탕수육", "팔보채"]
-	},
 	"widgets":
 	[
 		{
@@ -29,30 +24,6 @@
 			"scale" : 100,
 			"flexible" : 1,
 			"path" : "widget/flexible.json"
-		},
-		{
-			"name" : "키오스크_테이블",
-			"width" : 1000,
-			"height" : 800,
-			"scale" : 100,
-			"flexible" : 1,
-			"path" : "widget/kiosk_table.json"
-		},
-		{
-			"name" : "키오스크_데스크",
-			"width" : 1000,
-			"height" : 800,
-			"scale" : 100,
-			"flexible" : 1,
-			"path" : "widget/kiosk_desk.json"
-		},
-		{
-			"name" : "App1",
-			"width" : 600,
-			"height" : 500,
-			"scale" : 100,
-			"flexible" : 0,
-			"path" : "widget/app1.json"
 		}
 	],
 	"server":
