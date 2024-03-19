@@ -22,6 +22,14 @@ public:
 };
 typedef Map<HtmlView> HtmlViewes;
 
+class SyncDom
+{
+public:
+    String mAssetName;
+    String mDomNameHeader;
+};
+typedef Array<SyncDom> SyncDoms;
+
 class challengersData : public ZayObject
 {
 public:
@@ -75,6 +83,7 @@ public:
     void CallGate(chars gatename, sint32 excluded_peerid);
     void CallGateFlush(chars gatename);
     void ExitAll();
+    void FlushSyncDom();
 
 public: // 서버
     void TryServerRecvOnce();
@@ -128,6 +137,7 @@ public: // 위젯
     ZayWidget* mWidgetMain {nullptr};
     ZayWidget* mWidgetSub {nullptr};
     rect128 mWidgetSubRect {0, 0, 0, 0};
+    SyncDoms mSyncDoms;
     Map<ReservedValues> mReservedValues; // [Key][N] Value/FlushMsec
     Map<ReservedValues> mReservedSounds; // [FileName][N] Speaker/FlushMsec
     Map<ReservedValues> mReservedSerials; // [Packet][N] Device/FlushMsec

@@ -295,8 +295,11 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
         #endif
 
         case 27: // Escape
-            m->ExitWidget();
-            m->invalidate();
+            if(m->mWidgetMain)
+            {
+                m->ExitWidget();
+                m->invalidate();
+            }
             break;
         }
     }
@@ -1273,6 +1276,28 @@ void challengersData::InitWidget(ZayWidget& widget, chars name)
                 invalidate();
             }
         })
+        // DOM연결
+        .AddGlue("synchronize_dom", ZAY_DECLARE_GLUE(params, this)
+        {
+            if(params.ParamCount() == 2)
+            {
+                const String SaveName = params.Param(0).ToText();
+                const String DomNameHeader = params.Param(1).ToText();
+                if(!String::Compare(DomNameHeader, "d.", 2))
+                {
+                    auto& NewSyncDom = mSyncDoms.AtAdding();
+                    NewSyncDom.mAssetName = "syncdom_" + SaveName + ".json";
+                    NewSyncDom.mDomNameHeader = DomNameHeader.Offset(2);
+                    const String JsonText = String::FromAsset(NewSyncDom.mAssetName);
+                    if(0 < JsonText.Length())
+                    {
+                        const Context Json(ST_Json, SO_OnlyReference, JsonText);
+                        ZayWidgetDOM::SetJson(Json, NewSyncDom.mDomNameHeader);
+                        invalidate();
+                    }
+                }
+            }
+        })
         // 예약된 명령을 취소
         .AddGlue("cancel_reserve", ZAY_DECLARE_GLUE(params, this)
         {
@@ -1494,6 +1519,7 @@ void challengersData::ExitWidget()
     ZayWidgetDOM::SetValue("program.flexible", "1");
     if(!IsFullScreen())
         Platform::SetWindowSize(mSavedLobbySize.w, mSavedLobbySize.h);
+    FlushSyncDom();
 }
 
 void challengersData::CallScript(chars filename, const Strings& args) const
@@ -1918,7 +1944,10 @@ void challengersData::ExitAll()
     if(mServer)
     {
         if(mServerPeers.Count() == 0)
+        {
+            FlushSyncDom();
             Platform::Utility::ExitProgram();
+        }
         else
         {
             Context NewPacket;
@@ -1940,6 +1969,18 @@ void challengersData::ExitAll()
     }
 }
 
+void challengersData::FlushSyncDom()
+{
+    for(sint32 i = mSyncDoms.Count() - 1; 0 <= i; --i)
+    {
+        auto& CurSyncDom = mSyncDoms[i];
+        Context Json;
+        ZayWidgetDOM::GetJson(Json, CurSyncDom.mDomNameHeader);
+        Json.SaveJson().ToAsset(CurSyncDom.mAssetName, true);
+    }
+    mSyncDoms.Clear();
+}
+
 void challengersData::TryServerRecvOnce()
 {
     while(Platform::Server::TryNextPacket(mServer))
@@ -1959,7 +2000,10 @@ void challengersData::TryServerRecvOnce()
             ZayWidgetDOM::SetValue("program.connect", String::Format("'server(%d)'", mServerPeers.Count()));
             // ExitAll처리
             if(mWasExitAll && mServerPeers.Count() == 0)
+            {
+                FlushSyncDom();
                 Platform::Utility::ExitProgram();
+            }
             break;
         case packettype_message:
             {
@@ -2177,6 +2221,7 @@ void challengersData::OnClient_CalledGate(const Context& json)
 
 void challengersData::OnClient_ExitedAll(const Context& json)
 {
+    FlushSyncDom();
     Platform::Utility::ExitProgram();
 }
 
