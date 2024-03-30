@@ -14,6 +14,8 @@ extern String gFirstWidget;
 extern sint32 gFirstPosX;
 extern sint32 gFirstPosY;
 extern sint32 gFirstScale;
+extern sint32 gPythonAppID;
+extern sint32 gPythonPort;
 extern h_view gWindowView;
 
 ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
@@ -60,6 +62,20 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
         }
         else if(m->CheckDOM(CurMsec))
             m->invalidate();
+
+        // 파이썬연결(최초한번)
+        if(gPythonPort != 0)
+        {
+            id_socket NewSocket = Platform::Socket::OpenForWS(false);
+            if(!Platform::Socket::Connect(NewSocket, "127.0.0.1", gPythonPort))
+                Platform::Socket::Close(NewSocket);
+            else
+            {
+                m->mPython = NewSocket;
+                m->PythonSend(String::Format("init,%d", gPythonAppID));
+            }
+            gPythonPort = 0;
+        }
 
         // 예약된 밸류처리
         for(sint32 i = m->mReservedValues.Count() - 1; 0 <= i; --i)
@@ -200,6 +216,14 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
             }
         }
 
+        // 파이썬 연결상태
+        if(m->mPython && !Platform::Socket::IsConnected(m->mPython))
+        {
+            Platform::Socket::Close(m->mPython);
+            m->mPython = nullptr;
+            m->ExitAll();
+        }
+
         // 녹화
         if(m->mRecFrame != -1)
         if(auto CurImage = Platform::Utility::GetScreenshotImage(m->mRecRect))
@@ -307,6 +331,7 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
     {
         m->TryServerRecvOnce();
         m->TryClientRecvOnce();
+        m->TryPythonRecvOnce();
     }
     else if(type == NT_ZayWidget)
     {
@@ -481,6 +506,12 @@ challengersData::~challengersData()
     // 서버IP의 저장
     auto LastServerIP = ZayWidgetDOM::GetComment("serverip");
     LastServerIP.ToAsset("serverip.txt", true);
+
+    Platform::Server::Release(mServer);
+    Platform::Socket::Close(mClient);
+    Platform::Socket::Close(mPython);
+    Platform::Serial::Close(mSerialPass1);
+    Platform::Serial::Close(mSerialPass2);
 }
 
 void challengersData::SetCursor(CursorRole role)
@@ -1125,6 +1156,16 @@ void challengersData::InitWidget(ZayWidget& widget, chars name)
             {
                 const String Topic = params.Param(0).ToText();
                 Platform::BroadcastNotify(Topic, nullptr);
+            }
+        })
+        // 파이썬실행
+        .AddGlue("python", ZAY_DECLARE_GLUE(params, this)
+        {
+            if(params.ParamCount() == 1)
+            {
+                const String Func = params.Param(0).ToText();
+                if(mPython != nullptr)
+                    PythonSend(String::Format("call,%s", (chars) Func));
             }
         })
         // 옵션준비
@@ -2116,7 +2157,7 @@ void challengersData::TryClientRecvOnce()
     while(0 < Platform::Socket::RecvAvailable(mClient))
     {
         uint08 RecvTemp[4096];
-        sint32 RecvSize = Platform::Socket::Recv(mClient, RecvTemp, 4096);
+        const sint32 RecvSize = Platform::Socket::Recv(mClient, RecvTemp, 4096);
         if(0 < RecvSize)
             Memory::Copy(mClientQueue.AtDumpingAdded(RecvSize), RecvTemp, RecvSize);
         else if(RecvSize < 0)
@@ -2229,6 +2270,83 @@ void challengersData::ClientSend(const Context& json)
 {
     const String NewJson = json.SaveJson();
     if(mClientConnected)
-        Platform::Socket::Send(mClient, (bytes)(chars) NewJson, NewJson.Length() + 1, 3000, true);
+        Platform::Socket::Send(mClient, (bytes)(chars) NewJson,
+            NewJson.Length() + 1, 3000, true);
     else mClientSendTasks.AtAdding() = NewJson;
+}
+
+void challengersData::TryPythonRecvOnce()
+{
+    while(0 < Platform::Socket::RecvAvailable(mPython))
+    {
+        uint08 RecvTemp[4096];
+        const sint32 RecvSize = Platform::Socket::Recv(mPython, RecvTemp, 4096);
+        if(0 < RecvSize)
+            Memory::Copy(mPythonQueue.AtDumpingAdded(RecvSize), RecvTemp, RecvSize);
+        else if(RecvSize < 0)
+            return;
+
+        sint32 QueueEndPos = 0;
+        for(sint32 iend = mPythonQueue.Count(), i = iend - RecvSize; i < iend; ++i)
+        {
+            if(mPythonQueue[i] == '#')
+            {
+                // 스트링 읽기
+                const String Packet((chars) &mPythonQueue[QueueEndPos], i - QueueEndPos);
+                QueueEndPos = i + 1;
+                if(0 < Packet.Length())
+                {
+                    const Strings Params = String::Split(Packet);
+                    if(0 < Params.Count())
+                    {
+                        const String Type = Params[0];
+                        branch;
+                        jump(!Type.Compare("set")) OnPython_set(Params);
+                        jump(!Type.Compare("get")) OnPython_get(Params);
+                        jump(!Type.Compare("call")) OnPython_call(Params);
+                    }
+                }
+                invalidate();
+            }
+        }
+        if(0 < QueueEndPos)
+            mPythonQueue.SubtractionSection(0, QueueEndPos);
+    }
+}
+
+void challengersData::OnPython_set(const Strings& params)
+{
+    if(2 < params.Count())
+    {
+        UpdateDom(params[1], params[2], 0, -1);
+        invalidate();
+    }
+}
+
+void challengersData::OnPython_get(const Strings& params)
+{
+    if(1 < params.Count())
+    {
+        const chars Key = (chars) params[1];
+        if(Key[0] == 'd' && Key[1] == '.')
+        {
+            const String Value = ZayWidgetDOM::GetValue(&Key[2]).ToText();
+            PythonSend(String::Format("put,%s", (chars) Value));
+        }
+    }
+}
+
+void challengersData::OnPython_call(const Strings& params)
+{
+    if(1 < params.Count())
+    {
+        if(mWidgetMain)
+            mWidgetMain->JumpCall(params[1]);
+    }
+}
+
+void challengersData::PythonSend(const String& comma_params)
+{
+    Platform::Socket::Send(mPython, (bytes)(chars) comma_params,
+        comma_params.Length(), 3000, true);
 }

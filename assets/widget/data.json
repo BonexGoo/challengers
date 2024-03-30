@@ -1,58 +1,76 @@
-{
-	"widgets":
+﻿{
+	"fonts":
 	[
 		{
-			"name" : "계산기",
-			"width" : 600,
-			"height" : 500,
-			"scale" : 100,
-			"flexible" : 0,
-			"path" : "widget/calculator.json"
+			"path":"font/NotoSansKR-Bold.ttf"
 		},
 		{
-			"name" : "애니메이션",
-			"width" : 500,
-			"height" : 500,
-			"scale" : 100,
-			"flexible" : 0,
-			"path" : "widget/animation.json"
+			"path":"font/NotoSansKR-Medium.ttf"
 		},
 		{
-			"name" : "플렉시블",
-			"width" : 600,
-			"height" : 600,
-			"scale" : 100,
-			"flexible" : 1,
-			"path" : "widget/flexible.json"
+			"path":"font/NotoSansKR-Regular.ttf"
+		},
+		{
+			"path":"font/Roboto-Bold.ttf"
+		},
+		{
+			"path":"font/Roboto-Medium.ttf"
 		}
 	],
-	"server":
-	{
-		"host" : "127.0.0.1",
-		"port" : 9876,
-		"idx" : 4
-	},
 	"serial":
 	{
+		"idx":-1,
 		"pass1":
 		{
-			"name" : "COM5",
-			"baudrate" : 9600
+			"baudrate":9600,
+			"name":"COM5"
 		},
 		"pass2":
 		{
-			"name" : "COM6",
-			"baudrate" : 9600
+			"baudrate":9600,
+			"name":"COM6"
 		},
-		"sizefield" : 0,
-		"idx" : -1
+		"sizefield":0
 	},
-	"fonts":
+	"server":
+	{
+		"host":"127.0.0.1",
+		"idx":4,
+		"port":9876
+	},
+	"widgets":
 	[
-		{"path" : "font/NotoSansKR-Bold.ttf"},
-		{"path" : "font/NotoSansKR-Medium.ttf"},
-		{"path" : "font/NotoSansKR-Regular.ttf"},
-		{"path" : "font/Roboto-Bold.ttf"},
-		{"path" : "font/Roboto-Medium.ttf"}
+		{
+			"flexible":0,
+			"height":500,
+			"name":"계산기",
+			"path":"widget/calculator.json",
+			"scale":100,
+			"width":600
+		},
+		{
+			"flexible":0,
+			"height":500,
+			"name":"애니메이션",
+			"path":"widget/animation.json",
+			"scale":100,
+			"width":500
+		},
+		{
+			"flexible":1,
+			"height":600,
+			"name":"플렉시블",
+			"path":"widget/flexible.json",
+			"scale":100,
+			"width":600
+		},
+		{
+			"flexible":"1",
+			"height":"600",
+			"name":"todolist",
+			"path":"widget/todolist.json",
+			"scale":"100",
+			"width":"800"
+		}
 	]
 }

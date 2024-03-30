@@ -16,6 +16,32 @@
 			"expanded":"1",
 			"posx":"1651",
 			"posy":"383"
+		},
+		{
+			"addw":"0",
+			"compid":"123",
+			"compname":"gate",
+			"expanded":"1",
+			"posx":"566",
+			"posy":"2338",
+			"ui":
+			[
+				{
+					"addw":"0",
+					"compid":"124",
+					"compinputs":
+					[
+						{
+							"count":"3"
+						}
+					],
+					"compname":"code",
+					"expanded":"1",
+					"posx":"934",
+					"posy":"2354"
+				}
+			],
+			"uiname":"AAA"
 		}
 	],
 	"oncreate":
@@ -1010,6 +1036,59 @@
 			],
 			"uiloop":"count",
 			"uiname":"i"
+		},
+		{
+			"addw":"30",
+			"comment":"Start콜",
+			"compid":"120",
+			"compname":"xywh",
+			"compvalues":
+			[
+				[
+					"50",
+					"50",
+					"50",
+					"50"
+				]
+			],
+			"expanded":"1",
+			"onclick":
+			[
+				"python(Start)"
+			],
+			"posx":"563",
+			"posy":"2046",
+			"ui":
+			[
+				{
+					"addw":"0",
+					"compid":"121",
+					"compname":"color",
+					"compvalues":
+					[
+						[
+							"255",
+							"0",
+							"0",
+							"128"
+						]
+					],
+					"expanded":"1",
+					"posx":"916",
+					"posy":"2063",
+					"ui":
+					[
+						{
+							"addw":"0",
+							"compid":"122",
+							"compname":"circle",
+							"expanded":"1",
+							"posx":"1245",
+							"posy":"2083"
+						}
+					]
+				}
+			]
 		}
 	]
 }

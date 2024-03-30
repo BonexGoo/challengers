@@ -14,6 +14,8 @@ String gFirstWidget;
 sint32 gFirstPosX = 0;
 sint32 gFirstPosY = 0;
 sint32 gFirstScale = 0;
+sint32 gPythonAppID = -1;
+sint32 gPythonPort = 0;
 h_view gWindowView;
 
 bool PlatformInit()
@@ -30,11 +32,12 @@ bool PlatformInit()
     chars WidgetName = Platform::Utility::GetArgument(1, &ArgCount);
     if(WidgetName != nullptr && 3 < ArgCount)
     {
-        gFirstWidget = WidgetName;
+        gFirstWidget = String::FromWChars(WString::FromCp949(false, WidgetName));
         gFirstPosX = Parser::GetInt(Platform::Utility::GetArgument(2));
         gFirstPosY = Parser::GetInt(Platform::Utility::GetArgument(3));
-        if(4 < ArgCount)
-            gFirstScale = Parser::GetInt(Platform::Utility::GetArgument(4));
+        if(4 < ArgCount) gFirstScale = Parser::GetInt(Platform::Utility::GetArgument(4));
+        if(5 < ArgCount) gPythonAppID = Parser::GetInt(Platform::Utility::GetArgument(5));
+        if(6 < ArgCount) gPythonPort = Parser::GetInt(Platform::Utility::GetArgument(6));
     }
 
     Platform::SetViewCreator(ZayView::Creator);

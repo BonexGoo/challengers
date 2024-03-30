@@ -115,6 +115,13 @@ public: // 클라이언트
     void OnClient_ExitedAll(const Context& json);
     void ClientSend(const Context& json);
 
+public: // 파이썬
+    void TryPythonRecvOnce();
+    void OnPython_set(const Strings& params);
+    void OnPython_get(const Strings& params);
+    void OnPython_call(const Strings& params);
+    void PythonSend(const String& comma_params);
+
 public: // 윈도우
     static const sint32 mMinWindowWidth = 400;
     static const sint32 mMinWindowHeight = 400;
@@ -168,6 +175,10 @@ public: // 클라이언트통신
     bool mClientConnected {false};
     uint08s mClientQueue;
     Strings mClientSendTasks;
+
+public: // 파이썬통신
+    id_socket mPython {nullptr};
+    uint08s mPythonQueue;
 
 public: // 시리얼통신
     id_serial mSerialPass1 {nullptr};
