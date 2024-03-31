@@ -71,6 +71,14 @@
 			"path":"widget/todolist.json",
 			"scale":"100",
 			"width":"800"
+		},
+		{
+			"flexible":"0",
+			"height":"300",
+			"name":"두더지",
+			"path":"widget/두더지.json",
+			"scale":"100",
+			"width":"300"
 		}
 	]
 }

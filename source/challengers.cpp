@@ -216,14 +216,6 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
             }
         }
 
-        // 파이썬 연결상태
-        if(m->mPython && !Platform::Socket::IsConnected(m->mPython))
-        {
-            Platform::Socket::Close(m->mPython);
-            m->mPython = nullptr;
-            m->ExitAll();
-        }
-
         // 녹화
         if(m->mRecFrame != -1)
         if(auto CurImage = Platform::Utility::GetScreenshotImage(m->mRecRect))
@@ -330,8 +322,21 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
     else if(type == NT_SocketReceive)
     {
         m->TryServerRecvOnce();
-        m->TryClientRecvOnce();
-        m->TryPythonRecvOnce();
+        if(topic == "message")
+        {
+            m->TryClientRecvOnce();
+            m->TryPythonRecvOnce();
+        }
+        else if(topic == "disconnected")
+        {
+            // 파이썬 접속상태확인
+            if(m->mPython && !Platform::Socket::IsConnected(m->mPython))
+            {
+                Platform::Socket::Close(m->mPython);
+                m->mPython = nullptr;
+                m->ExitAll();
+            }
+        }
     }
     else if(type == NT_ZayWidget)
     {
