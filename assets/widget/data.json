@@ -79,6 +79,14 @@
 			"path":"widget/두더지.json",
 			"scale":"100",
 			"width":"300"
+		},
+		{
+			"flexible":"0",
+			"height":"800",
+			"name":"테트리스",
+			"path":"widget/테트리스.json",
+			"scale":"100",
+			"width":"500"
 		}
 	]
 }
