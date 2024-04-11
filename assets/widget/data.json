@@ -87,6 +87,14 @@
 			"path":"widget/테트리스.json",
 			"scale":"100",
 			"width":"500"
+		},
+		{
+			"flexible":"0",
+			"height":"700",
+			"name":"오셀로",
+			"path":"widget/오셀로.json",
+			"scale":"100",
+			"width":"700"
 		}
 	]
 }
