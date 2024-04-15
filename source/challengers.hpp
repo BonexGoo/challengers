@@ -121,6 +121,7 @@ public: // 파이썬
     void OnPython_get(const Strings& params);
     void OnPython_call(const Strings& params);
     void PythonSend(const String& comma_params);
+    String FindPythonKey(sint32 keycode);
 
 public: // 윈도우
     static const sint32 mMinWindowWidth = 400;

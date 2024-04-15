@@ -113,6 +113,8 @@ def OnRight(nouse):
 snake.oncall("start", OnStart, 0)
 snake.oncall("left", OnLeft, 0)
 snake.oncall("right", OnRight, 0)
+snake.oncall("KeyPress_Left", OnLeft, 0)
+snake.oncall("KeyPress_Right", OnRight, 0)
 
 Reset()
 PrintSnake()

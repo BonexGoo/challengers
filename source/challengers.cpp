@@ -318,6 +318,24 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
             }
             break;
         }
+        // 파이썬 키처리
+        if(m->mPython != nullptr)
+        {
+            const String KeyText = m->FindPythonKey(KeyCode);
+            if(0 < KeyText.Length())
+                m->PythonSend(String::Format("call,KeyPress_%s", (chars) KeyText));
+        }
+    }
+    else if(type == NT_KeyRelease)
+    {
+        const sint32 KeyCode = sint32o(in).ConstValue();
+        // 파이썬 키처리
+        if(m->mPython != nullptr)
+        {
+            const String KeyText = m->FindPythonKey(KeyCode);
+            if(0 < KeyText.Length())
+                m->PythonSend(String::Format("call,KeyRelease_%s", (chars) KeyText));
+        }
     }
     else if(type == NT_SocketReceive)
     {
@@ -2354,4 +2372,34 @@ void challengersData::PythonSend(const String& comma_params)
 {
     Platform::Socket::Send(mPython, (bytes)(chars) comma_params,
         comma_params.Length(), 3000, true);
+}
+
+String challengersData::FindPythonKey(sint32 keycode)
+{
+    String KeyText;
+    switch(keycode)
+    {
+    case 8: KeyText = "Backspace"; break;
+    case 13: KeyText = "Enter"; break;
+    case 16: KeyText = "Shift"; break;
+    case 17: KeyText = "Ctrl"; break;
+    case 18: KeyText = "Alt"; break;
+    case 21: KeyText = "Hangul"; break;
+    case 25: KeyText = "Hanja"; break;
+    case 32: KeyText = "Space"; break;
+    case 37: KeyText = "Left"; break;
+    case 38: KeyText = "Up"; break;
+    case 39: KeyText = "Right"; break;
+    case 40: KeyText = "Down"; break;
+    case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+        KeyText = '0' + (keycode - 48); break;
+    case 65: case 66: case 67: case 68: case 69: case 70: case 71: case 72: case 73: case 74:
+    case 75: case 76: case 77: case 78: case 79: case 80: case 81: case 82: case 83: case 84:
+    case 85: case 86: case 87: case 88: case 89: case 90:
+        KeyText = 'A' + (keycode - 65); break;
+    case 112: case 113: case 114: case 115: case 116: case 117:
+    case 118: case 119: case 120: case 121: case 122: case 123:
+        KeyText = String::Format("F%d", 1 + (keycode - 112)); break;
+    }
+    return KeyText;
 }
