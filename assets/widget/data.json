@@ -95,6 +95,14 @@
 			"path":"widget/오셀로.json",
 			"scale":"100",
 			"width":"700"
+		},
+		{
+			"flexible":"0",
+			"height":"800",
+			"name":"스네이크",
+			"path":"widget/스네이크.json",
+			"scale":"100",
+			"width":"1000"
 		}
 	]
 }
