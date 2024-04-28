@@ -390,6 +390,50 @@
 															"expanded":"1",
 															"posx":"2951",
 															"posy":"10906"
+														},
+														{
+															"addw":"0",
+															"compname":"endif",
+															"expanded":"1",
+															"posx":"2952",
+															"posy":"11185"
+														},
+														{
+															"addw":"109",
+															"compid":"135",
+															"compname":"ltrb",
+															"compvalues":
+															[
+																"if(pV < (0 @'d.data.widgets.count'))",
+																[
+																	"31",
+																	"35",
+																	"pW - 29",
+																	"pH - 15"
+																]
+															],
+															"expanded":"1",
+															"posx":"2953",
+															"posy":"11293",
+															"ui":
+															[
+																{
+																	"addw":"25",
+																	"compid":"136",
+																	"compname":"stretch",
+																	"compvalues":
+																	[
+																		[
+																			"r.zaypro_logo",
+																			"true",
+																			"inner"
+																		]
+																	],
+																	"expanded":"1",
+																	"posx":"3413",
+																	"posy":"11319"
+																}
+															]
 														}
 													]
 												}
@@ -410,8 +454,8 @@
 												]
 											],
 											"expanded":"1",
-											"posx":"2071",
-											"posy":"11178",
+											"posx":"2070",
+											"posy":"11776",
 											"ui":
 											[
 												{
@@ -427,8 +471,8 @@
 														]
 													],
 													"expanded":"1",
-													"posx":"2426",
-													"posy":"11192",
+													"posx":"2425",
+													"posy":"11790",
 													"ui":
 													[
 														{
@@ -443,8 +487,8 @@
 																]
 															],
 															"expanded":"1",
-															"posx":"2787",
-															"posy":"11198",
+															"posx":"2786",
+															"posy":"11796",
 															"ui":
 															[
 																{
@@ -460,8 +504,8 @@
 																		]
 																	],
 																	"expanded":"1",
-																	"posx":"3161",
-																	"posy":"11193"
+																	"posx":"3160",
+																	"posy":"11791"
 																}
 															]
 														}
@@ -1946,14 +1990,15 @@
 			"ui":
 			[
 				{
-					"addw":"51",
-					"compid":"23",
-					"compname":"icon",
+					"addw":"31",
+					"compid":"133",
+					"compname":"stretch",
 					"compvalues":
 					[
 						[
 							"r.aether_logo",
-							"centermiddle"
+							"true",
+							"inner"
 						]
 					],
 					"expanded":"1",
@@ -2018,7 +2063,7 @@
 											"compvalues":
 											[
 												[
-													"'AETHER'",
+													"'  AETHER'",
 													"leftmiddle"
 												]
 											],
