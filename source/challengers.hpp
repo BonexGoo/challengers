@@ -2,18 +2,6 @@
 #include <service/boss_zay.hpp>
 #include <service/boss_zaywidget.hpp>
 
-class HtmlView
-{
-public:
-    String mName;
-    sint32 mLoading {-1};
-    h_web mHtml;
-    sint32 mWidth {0};
-    sint32 mHeight {0};
-    uint64 mLiveMsec {0};
-};
-typedef Map<HtmlView> HtmlViewes;
-
 class challengersData : public ZayObject
 {
 public:
@@ -27,9 +15,6 @@ public:
     sint32 MoveNcRight(const rect128& rect, sint32 addx);
     sint32 MoveNcBottom(const rect128& rect, sint32 addy);
     void RenderWindowOutline(ZayPanel& panel);
-    bool RenderHtmlView(ZayPanel& panel, chars viewid, chars htmlname);
-    bool RenderSlider(ZayPanel& panel, chars domname, sint32 maxvalue, bool flip);
-    bool RenderLoader(ZayPanel& panel, float percent, sint32 gap);
     bool IsFullScreen();
     void SetFullScreen();
     void SetNormalWindow();
@@ -44,7 +29,6 @@ public:
     void UpdateDom(chars key, chars value);
     void PlaySound(chars filename);
     void StopSound();
-    void SendView(chars viewid, chars command);
     void CallGate(chars gatename);
 
 public: // 파이썬
@@ -73,7 +57,6 @@ public: // 위젯
     uint64 mLastModifyTime {0};
     ZayWidget mWidgetIntro;
     ZayWidget* mWidgetMain {nullptr};
-    HtmlViewes mHtmlViewes;
     sint32 mReservedEnterWidget {-1};
     sint32 mReservedChangeWidget {-1};
     id_sound mSounds[4] {nullptr, nullptr, nullptr, nullptr};

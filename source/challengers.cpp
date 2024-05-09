@@ -83,22 +83,6 @@ ZAY_VIEW_API OnCommand(CommandType type, id_share in, id_cloned_share* out)
             m->invalidate(2);
         }
 
-        // HtmlView처리
-        if(const sint32 HtmlCount = m->mHtmlViewes.Count())
-        {
-            for(sint32 i = HtmlCount - 1; 0 <= i; --i)
-            {
-                chararray ViewID;
-                if(auto CurHtml = m->mHtmlViewes.AccessByOrder(i, &ViewID))
-                if(CurHtml->mLiveMsec < CurMsec)
-                {
-                    m->mHtmlViewes.Remove(&ViewID[0]);
-                    ZayWidgetDOM::SetValue("program.html", String::FromInteger(m->mHtmlViewes.Count()));
-                }
-            }
-            m->invalidate(2);
-        }
-
         // 위젯 틱실행
         if(m->mWidgetMain)
         {
@@ -176,9 +160,9 @@ ZAY_VIEW_API OnNotify(NotifyType type, chars topic, id_share in, id_cloned_share
     }
     else if(type == NT_SocketReceive)
     {
-        if(topic == "message")
+        if(!String::Compare(topic, "message"))
             m->TryPythonRecvOnce();
-        else if(topic == "disconnected")
+        else if(!String::Compare(topic, "disconnected"))
         {
             // 파이썬 접속상태확인
             if(m->mPython && !Platform::Socket::IsConnected(m->mPython))
@@ -524,145 +508,6 @@ void challengersData::RenderWindowOutline(ZayPanel& panel)
         });
 }
 
-bool challengersData::RenderHtmlView(ZayPanel& panel, chars viewid, chars htmlname)
-{
-    auto& OneHtmlView = mHtmlViewes(viewid);
-    const float OneZoom = panel.zoom().scale;
-    const sint32 HtmlWidth = panel.w() / OneZoom;
-    const sint32 HtmlHeight = panel.h() / OneZoom;
-
-    // Html이 다를 경우
-    if(!!OneHtmlView.mName.Compare(htmlname))
-    {
-        OneHtmlView.mName = htmlname;
-        // 소멸처리
-        if(!OneHtmlView.mName.Compare("x"))
-        {
-            if(OneHtmlView.mHtml.get())
-            {
-                OneHtmlView.mLoading = -1;
-                if(Platform::Graphics::BeginGL())
-                {
-                    Platform::Web::Release(OneHtmlView.mHtml);
-                    Platform::Graphics::EndGL();
-                }
-                OneHtmlView.mWidth = 0;
-                OneHtmlView.mHeight = 0;
-                OneHtmlView.mLiveMsec = 0;
-            }
-            return true;
-        }
-
-        // 로딩처리
-        OneHtmlView.mLoading = 30;
-        if(Platform::Graphics::BeginGL())
-        {
-            if(!OneHtmlView.mHtml.get())
-            {
-                OneHtmlView.mHtml = Platform::Web::Create(Platform::File::RootForAssets() + "html/" + OneHtmlView.mName,
-                    HtmlWidth, HtmlHeight, false);
-                OneHtmlView.mWidth = HtmlWidth;
-                OneHtmlView.mHeight = HtmlHeight;
-                ZayWidgetDOM::SetValue("program.html", String::FromInteger(mHtmlViewes.Count()));
-            }
-            else Platform::Web::Reload(OneHtmlView.mHtml, Platform::File::RootForAssets() + "html/" + OneHtmlView.mName);
-            Platform::Graphics::EndGL();
-        }
-    }
-    else if(!OneHtmlView.mName.Compare("x"))
-        return true;
-
-    // 화면크기변경
-    if(OneHtmlView.mWidth != HtmlWidth || OneHtmlView.mHeight != HtmlHeight)
-    {
-        if(Platform::Graphics::BeginGL())
-        {
-            Platform::Web::Resize(OneHtmlView.mHtml, HtmlWidth, HtmlHeight);
-            Platform::Graphics::EndGL();
-        }
-        OneHtmlView.mWidth = HtmlWidth;
-        OneHtmlView.mHeight = HtmlHeight;
-    }
-
-    // 클릭처리
-    if(0 <= OneHtmlView.mLoading)
-    {
-        float Rate = 0;
-        if(!Platform::Web::NowLoading(OneHtmlView.mHtml, &Rate))
-        if(Rate == 1 && Platform::Graphics::BeginGL())
-        {
-            if(0 == OneHtmlView.mLoading--)
-            {
-                Platform::Web::SendTouchEvent(OneHtmlView.mHtml, TT_Press, HtmlWidth / 2, HtmlHeight / 2);
-                Platform::Web::SendTouchEvent(OneHtmlView.mHtml, TT_Release, HtmlWidth / 2, HtmlHeight / 2);
-            }
-            Platform::Graphics::EndGL();
-        }
-    }
-
-    // 화면출력
-    if(OneHtmlView.mLoading == -1 && Platform::Graphics::BeginGL())
-    {
-        auto LastTexture = Platform::Web::GetPageTexture(OneHtmlView.mHtml);
-        const auto DstPos = panel.toview(0, 0);
-        Platform::Graphics::DrawTextureToFBO(LastTexture, 0, 0, HtmlWidth, HtmlHeight,
-            orientationtype_fliped180, false, DstPos.x * OneZoom, DstPos.y * OneZoom, panel.w() * OneZoom, panel.h() * OneZoom);
-        Platform::Graphics::EndGL();
-    }
-    OneHtmlView.mLiveMsec = Platform::Utility::CurrentTimeMsec() + 3000;
-    return true;
-}
-
-bool challengersData::RenderSlider(ZayPanel& panel, chars domname, sint32 maxvalue, bool flip)
-{
-    String DomName = domname;
-    String UIName = String::Format("ui_slider_%s", domname);
-    ZAY_INNER_UI(panel, 0, UIName,
-        ZAY_GESTURE_VNTXY(v, n, t, x, y, this, DomName, maxvalue, flip)
-        {
-            static float LimitValue;
-            if(t == GT_Pressed || t == GT_InDragging || t == GT_OutDragging)
-            {
-                auto CurRect = v->rect(n);
-                const float RateValue = ((flip)? CurRect.r - x : x - CurRect.l) / float(CurRect.r - CurRect.l);
-                LimitValue = Math::ClampF(maxvalue * RateValue, 0, maxvalue);
-                ZayWidgetDOM::SetValue(DomName, String::FromFloat(LimitValue));
-                invalidate();
-            }
-            else if(t == GT_InReleased || t == GT_OutReleased)
-            {
-                const sint32 RoundValue = Math::Math::Round(LimitValue);
-                UpdateDom("d." + DomName, String::FromInteger(RoundValue));
-                invalidate();
-            }
-        });
-    return true;
-}
-
-bool challengersData::RenderLoader(ZayPanel& panel, float percent, sint32 gap)
-{
-    const sint32 TopRight = (panel.w() - panel.w() / 2) * Math::ClampF(percent / 12.5, 0, 1);
-    ZAY_XYWH(panel, panel.w() / 2, 0, TopRight, gap)
-        panel.fill();
-
-    const sint32 Right = (panel.h() - gap) * Math::ClampF((percent - 12.5) / 25.0, 0, 1);
-    ZAY_XYWH(panel, panel.w() - gap, gap, gap, Right)
-        panel.fill();
-
-    const sint32 Bottom = (panel.w() - gap) * Math::ClampF((percent - 37.5) / 25.0, 0, 1);
-    ZAY_XYWH(panel, panel.w() - gap - Bottom, panel.h() - gap, Bottom, gap)
-        panel.fill();
-
-    const sint32 Left = (panel.h() - gap) * Math::ClampF((percent - 62.5) / 25.0, 0, 1);
-    ZAY_XYWH(panel, 0, panel.h() - gap - Left, gap, Left)
-        panel.fill();
-
-    const sint32 TopLeft = (panel.w() / 2 - gap) * Math::ClampF((percent - 87.5) / 12.5, 0, 1);
-    ZAY_XYWH(panel, gap, 0, TopLeft, gap)
-        panel.fill();
-    return true;
-}
-
 bool challengersData::IsFullScreen()
 {
     return mIsFullScreen;
@@ -997,17 +842,6 @@ void challengersData::InitWidget(ZayWidget& widget, chars name)
             if(NewMute) StopSound();
             invalidate();
         })
-        // HTML뷰에 명령전달
-        .AddGlue("send_view", ZAY_DECLARE_GLUE(params, this)
-        {
-            if(params.ParamCount() == 2)
-            {
-                const String ViewID = params.Param(0).ToText();
-                const String Command = params.Param(1).ToText();
-                SendView(ViewID, Command);
-                invalidate();
-            }
-        })
         // 게이트호출
         .AddGlue("call_gate", ZAY_DECLARE_GLUE(params, this)
         {
@@ -1017,53 +851,6 @@ void challengersData::InitWidget(ZayWidget& widget, chars name)
                 CallGate(GateName);
                 invalidate();
             }
-        })
-        // user_content
-        .AddComponent(ZayExtend::ComponentType::ContentWithParameter, "user_content", ZAY_DECLARE_COMPONENT(panel, params, this)
-        {
-            if(params.ParamCount() < 1)
-                return panel._push_pass();
-            const String Type = params.Param(0).ToText();
-            bool HasRender = false;
-
-            branch;
-            jump(!Type.Compare("html_view") && params.ParamCount() == 3)
-            {
-                const String ViewID = params.Param(1).ToText();
-                const String HtmlName = params.Param(2).ToText();
-                HasRender = RenderHtmlView(panel, ViewID, HtmlName);
-            }
-            jump(!Type.Compare("slider") && params.ParamCount() == 4)
-            {
-                const String DomName = params.Param(1).ToText();
-                const sint32 MaxValue = params.Param(2).ToInteger();
-                const bool Flip = (params.Param(3).ToInteger() != 0);
-                HasRender = RenderSlider(panel, DomName, MaxValue, Flip);
-            }
-            jump(!Type.Compare("loader") && params.ParamCount() == 3)
-            {
-                const float Percent = params.Param(1).ToFloat();
-                const sint32 Gap = params.Param(2).ToInteger();
-                HasRender = RenderLoader(panel, Percent, Gap);
-            }
-
-            // 그외 처리
-            if(!HasRender)
-            ZAY_INNER_SCISSOR(panel, 0)
-            {
-                ZAY_RGBA(panel, 255, 0, 0, 128)
-                    panel.fill();
-                for(sint32 i = 0; i < 5; ++i)
-                {
-                    ZAY_INNER(panel, 1 + i)
-                    ZAY_RGBA(panel, 255, 0, 0, 128 - 16 * i)
-                        panel.rect(1);
-                }
-                ZAY_FONT(panel, 1.2 * Math::MinF(Math::MinF(panel.w(), panel.h()) / 40, 1))
-                ZAY_RGB(panel, 255, 0, 0)
-                    panel.text(Type, UIFA_CenterMiddle, UIFE_Right);
-            }
-            return panel._push_pass();
         });
 }
 
@@ -1120,13 +907,6 @@ void challengersData::StopSound()
         mSounds[i] = nullptr;
     }
     mSoundFocus = 0;
-}
-
-void challengersData::SendView(chars viewid, chars command)
-{
-    if(auto OneHtmlView = mHtmlViewes.Access(viewid))
-    if(OneHtmlView->mHtml.get())
-        Platform::Web::CallJSFunction(OneHtmlView->mHtml, command);
 }
 
 void challengersData::CallGate(chars gatename)
